@@ -11,7 +11,7 @@ export default function SplashScreen() {
     useEffect(() => {
     const timer = setTimeout(() => {
       navigation.replace('SignIn'); // 👈 Matches Stack.Screen name
-    }, 3000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [navigation]);
