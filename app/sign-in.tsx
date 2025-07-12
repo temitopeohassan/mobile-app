@@ -1,50 +1,101 @@
 import { View, Text, TextInput, Button, Alert, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
-import { signIn } from '../hooks/useAuth';
+import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
+import { Picker } from '@react-native-picker/picker';
 
 export default function SignInScreen() {
   const navigation = useNavigation();
+  const [countryCode, setCountryCode] = useState('+234');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [pin, setPin] = useState('');
 
   const handleLogin = async () => {
+    if (phoneNumber.length < 7 || pin.length !== 4) {
+      Alert.alert('Invalid Input', 'Enter a valid phone number and a 4-digit PIN.');
+      return;
+    }
+
+    const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/^0/, '')}`;
+
     try {
-      const user = await signIn(phoneNumber, pin);
-      Alert.alert('Welcome', `Hello ${user.name}`);
-      navigation.replace('Home'); // 👈 This must match the `name` in App.tsx Stack.Screen
-    } catch (err: any) {
-      console.error(err);
-      Alert.alert('Login Failed', err.response?.data?.message || 'An error occurred');
+      const res = await axios.post('https://afrobank-backend-api.vercel.app/api/auth/login', {
+        phoneNumber: fullPhoneNumber,
+        pin,
+      });
+
+      const { token, user } = res.data;
+
+      Alert.alert('Login Successful', `Welcome ${user.phoneNumber}`);
+
+      navigation.replace('Home', {
+        phoneNumber: user.phoneNumber,
+        token: token,
+      });
+    } catch (error: any) {
+      console.error('Login failed:', error.message);
+      Alert.alert(
+        'Login Failed',
+        error?.response?.data?.error || 'An error occurred. Please try again.'
+      );
     }
   };
 
   const handleSignUp = () => {
-    navigation.navigate('SignUp'); // 👈 This must match a registered screen name
+    navigation.navigate('SignUp');
   };
 
   return (
-    <View style={{ padding: 24 }}>
-      <Text style={{ fontSize: 24, marginBottom: 16 }}>Sign In</Text>
+    <View style={{ padding: 24, flex: 1, justifyContent: 'center' }}>
+      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 24 }}>Sign In</Text>
 
-      <TextInput
-        placeholder="Phone Number"
-        keyboardType="phone-pad"
-        style={{ marginBottom: 12, borderWidth: 1, padding: 8 }}
-        value={phoneNumber}
-        onChangeText={setPhoneNumber}
-      />
+      <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+        <View style={{ flex: 1.2, borderWidth: 1, borderColor: '#ccc', borderRadius: 8 }}>
+          <Picker
+            selectedValue={countryCode}
+            onValueChange={(value) => setCountryCode(value)}
+            style={{ height: 50 }}
+          >
+            <Picker.Item label="+1 (US)" value="+1" />
+            <Picker.Item label="+44 (UK)" value="+44" />
+            <Picker.Item label="+234 (NG)" value="+234" />
+            <Picker.Item label="+91 (IN)" value="+91" />
+            <Picker.Item label="+33 (FR)" value="+33" />
+          </Picker>
+        </View>
+
+        <TextInput
+          placeholder="Phone Number"
+          keyboardType="phone-pad"
+          maxLength={11}
+          style={{
+            flex: 2.8,
+            marginLeft: 8,
+            borderWidth: 1,
+            borderColor: '#ccc',
+            borderRadius: 8,
+            padding: 12,
+          }}
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+        />
+      </View>
 
       <TextInput
         placeholder="PIN"
         secureTextEntry
         keyboardType="numeric"
         maxLength={4}
-        style={{ marginBottom: 12, borderWidth: 1, padding: 8 }}
+        style={{
+          marginBottom: 16,
+          borderWidth: 1,
+          borderColor: '#ccc',
+          borderRadius: 8,
+          padding: 12,
+        }}
         value={pin}
         onChangeText={setPin}
       />
-      
 
       <Button title="Login" onPress={handleLogin} />
 

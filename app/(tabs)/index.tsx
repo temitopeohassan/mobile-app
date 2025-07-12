@@ -1,36 +1,99 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { 
-  Bell, 
-  Eye, 
-  EyeOff, 
-  Send, 
-  Download, 
-  CreditCard, 
-  Smartphone,
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownLeft
-} from 'lucide-react-native';
-import { useState } from 'react';
+import { Bell, Eye, EyeOff, Copy } from 'lucide-react-native';
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import * as Clipboard from 'expo-clipboard';
 
-export default function HomeScreen() {
+export default function HomeScreen({ route }) {
   const [balanceVisible, setBalanceVisible] = useState(true);
+  const [userInfo, setUserInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const quickActions = [
-    { id: 1, title: 'Send Money', icon: Send, color: '#2563EB' },
-    { id: 2, title: 'Receive', icon: Download, color: '#059669' },
-    { id: 3, title: 'Pay Bills', icon: CreditCard, color: '#DC2626' },
-    { id: 4, title: 'Top Up', icon: Smartphone, color: '#7C3AED' },
-  ];
+  const phoneNumber = route?.params?.phoneNumber;
+  const token = route?.params?.token;
 
-  const recentTransactions = [
-    { id: 1, title: 'Netflix Subscription', amount: '-$15.99', type: 'expense', date: 'Today' },
-    { id: 2, title: 'Salary Deposit', amount: '+$3,200.00', type: 'income', date: 'Yesterday' },
-    { id: 3, title: 'Grocery Store', amount: '-$87.50', type: 'expense', date: '2 days ago' },
-    { id: 4, title: 'Freelance Payment', amount: '+$450.00', type: 'income', date: '3 days ago' },
-  ];
+  useEffect(() => {
+    console.log('HomeScreen mounted with route params:', { phoneNumber, token });
+  }, []);
+
+  const fetchUserData = useCallback(async () => {
+    if (!phoneNumber || !token) {
+      console.warn('Missing phoneNumber or token');
+      setError('Missing authentication parameters');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('Making API request to:', `https://afrobank-backend-api.vercel.app/api/user/dashboard/${encodeURIComponent(phoneNumber)}`);
+      console.log('With headers:', { Authorization: `Bearer ${token}` });
+
+      const response = await axios.get(
+        `https://afrobank-backend-api.vercel.app/api/user/dashboard/${encodeURIComponent(phoneNumber)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log('API Response Status:', response.status);
+      console.log('API Response Data:', JSON.stringify(response.data, null, 2));
+      setUserInfo(response.data);
+    } catch (error) {
+      console.error('Failed to fetch user info:', error.message);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      setError(error.response?.data?.error || error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [phoneNumber, token]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
+
+  const getShortWalletAddress = (address: string) => {
+    if (!address) return '';
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const handleCopyWallet = () => {
+    if (userInfo?.walletAddress) {
+      Clipboard.setStringAsync(userInfo.walletAddress);
+      Alert.alert('Copied', 'Wallet address copied to clipboard.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContent}>
+          <Text>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContent}>
+          <Text style={styles.errorText}>Error: {error}</Text>
+          <TouchableOpacity onPress={fetchUserData} style={styles.retryButton}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,8 +101,19 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Good Morning</Text>
-            <Text style={styles.username}>John Doe</Text>
+            <Text style={styles.greeting}>Welcome back</Text>
+            {userInfo?.walletAddress ? (
+              <View style={styles.walletRow}>
+                <Text style={styles.walletAddress}>
+                  {getShortWalletAddress(userInfo.walletAddress)}
+                </Text>
+                <TouchableOpacity onPress={handleCopyWallet} style={styles.copyButton}>
+                  <Copy size={16} color="#4B5563" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={styles.walletAddress}>No wallet found</Text>
+            )}
           </View>
           <TouchableOpacity style={styles.notificationButton}>
             <Bell size={24} color="#374151" />
@@ -47,83 +121,31 @@ export default function HomeScreen() {
         </View>
 
         {/* Balance Card */}
-        <LinearGradient
-          colors={['#2563EB', '#1D4ED8']}
-          style={styles.balanceCard}
-        >
+        <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.balanceCard}>
           <View style={styles.balanceHeader}>
-            <Text style={styles.balanceLabel}>Total Balance</Text>
+            <Text style={styles.balanceLabel}>cNGN Balance</Text>
             <TouchableOpacity onPress={() => setBalanceVisible(!balanceVisible)}>
-              {balanceVisible ? (
-                <Eye size={20} color="#FFFFFF" />
-              ) : (
-                <EyeOff size={20} color="#FFFFFF" />
-              )}
+              {balanceVisible ? <Eye size={20} color="#FFFFFF" /> : <EyeOff size={20} color="#FFFFFF" />}
             </TouchableOpacity>
           </View>
           <Text style={styles.balanceAmount}>
-            {balanceVisible ? '$12,547.80' : '••••••••'}
+            {balanceVisible
+              ? `${userInfo?.CNGNBalance || '0.00'} ${userInfo?.CNGNSymbol || 'cNGN'}`
+              : '••••••••'}
           </Text>
-          <View style={styles.balanceFooter}>
-            <View style={styles.balanceChange}>
-              <TrendingUp size={16} color="#10B981" />
-              <Text style={styles.balanceChangeText}>+5.2% from last month</Text>
-            </View>
-          </View>
         </LinearGradient>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActions}>
-            {quickActions.map((action) => (
-              <TouchableOpacity key={action.id} style={styles.quickAction}>
-                <View style={[styles.quickActionIcon, { backgroundColor: action.color }]}>
-                  <action.icon size={24} color="#FFFFFF" />
-                </View>
-                <Text style={styles.quickActionText}>{action.title}</Text>
-              </TouchableOpacity>
-            ))}
+        {/* Debug Info (optional) */}
+        {__DEV__ && userInfo && (
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugText}>Debug Info:</Text>
+            <Text style={styles.debugText}>Phone: {userInfo.phoneNumber}</Text>
+            <Text style={styles.debugText}>Wallet: {userInfo.walletAddress}</Text>
+            <Text style={styles.debugText}>Blockchain: {userInfo.blockchain}</Text>
+            <Text style={styles.debugText}>Balance: {userInfo.CNGNBalance}</Text>
+            <Text style={styles.debugText}>Symbol: {userInfo.CNGNSymbol}</Text>
           </View>
-        </View>
-
-        {/* Recent Transactions */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.transactionsList}>
-            {recentTransactions.map((transaction) => (
-              <View key={transaction.id} style={styles.transactionItem}>
-                <View style={styles.transactionLeft}>
-                  <View style={[
-                    styles.transactionIcon,
-                    { backgroundColor: transaction.type === 'income' ? '#DCFCE7' : '#FEE2E2' }
-                  ]}>
-                    {transaction.type === 'income' ? (
-                      <ArrowDownLeft size={20} color="#059669" />
-                    ) : (
-                      <ArrowUpRight size={20} color="#DC2626" />
-                    )}
-                  </View>
-                  <View style={styles.transactionDetails}>
-                    <Text style={styles.transactionTitle}>{transaction.title}</Text>
-                    <Text style={styles.transactionDate}>{transaction.date}</Text>
-                  </View>
-                </View>
-                <Text style={[
-                  styles.transactionAmount,
-                  { color: transaction.type === 'income' ? '#059669' : '#DC2626' }
-                ]}>
-                  {transaction.amount}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -147,11 +169,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#6B7280',
   },
-  username: {
-    fontSize: 24,
-    fontFamily: 'Inter-Bold',
-    color: '#111827',
+  walletRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 4,
+  },
+  walletAddress: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#4B5563',
+  },
+  copyButton: {
+    marginLeft: 8,
   },
   notificationButton: {
     width: 48,
@@ -189,112 +218,35 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 16,
   },
-  balanceFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  balanceChange: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  balanceChangeText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: '#10B981',
-  },
-  section: {
-    marginBottom: 32,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontFamily: 'Inter-Bold',
-    color: '#111827',
-    paddingHorizontal: 24,
-    marginBottom: 16,
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: '#2563EB',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-  },
-  quickAction: {
-    alignItems: 'center',
+  centerContent: {
     flex: 1,
-  },
-  quickActionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  quickActionText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: '#374151',
+  errorText: {
+    color: 'red',
+    fontSize: 16,
     textAlign: 'center',
+    marginBottom: 20,
   },
-  transactionsList: {
-    paddingHorizontal: 24,
+  retryButton: {
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
-  transactionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  transactionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  transactionDetails: {
-    flex: 1,
-  },
-  transactionTitle: {
+  retryText: {
+    color: 'white',
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#111827',
-    marginBottom: 2,
   },
-  transactionDate: {
+  debugContainer: {
+    margin: 20,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+  },
+  debugText: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#6B7280',
-  },
-  transactionAmount: {
-    fontSize: 16,
-    fontFamily: 'Inter-Bold',
+    color: '#333',
   },
 });
