@@ -137,8 +137,8 @@ export default function SettingsScreen() {
 
         {/* App Version */}
         <View style={styles.appVersion}>
-          <Text style={styles.versionText}>FinanceFlow v1.0.0</Text>
-          <Text style={styles.versionSubtext}>© 2024 FinanceFlow. All rights reserved.</Text>
+          <Text style={styles.versionText}>AfroBank v1.0.0</Text>
+          <Text style={styles.versionSubtext}>© 2025 AfroBank. All rights reserved.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

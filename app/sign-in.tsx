@@ -3,9 +3,12 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
+import { useAuth } from './context/AuthContext'; // 👈 import the context
 
 export default function SignInScreen() {
   const navigation = useNavigation();
+  const { setAuth } = useAuth(); // 👈 use context to store token and phoneNumber
+
   const [countryCode, setCountryCode] = useState('+234');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [pin, setPin] = useState('');
@@ -26,12 +29,13 @@ export default function SignInScreen() {
 
       const { token, user } = res.data;
 
+      // ✅ Set auth data globally
+      setAuth({ phoneNumber: user.phoneNumber, token });
+
       Alert.alert('Login Successful', `Welcome ${user.phoneNumber}`);
 
-      navigation.replace('Home', {
-        phoneNumber: user.phoneNumber,
-        token: token,
-      });
+      // ✅ Navigate to main app
+      navigation.replace('Home'); // no need to pass params anymore
     } catch (error: any) {
       console.error('Login failed:', error.message);
       Alert.alert(

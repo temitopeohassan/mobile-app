@@ -26,9 +26,9 @@ export default function BillsScreen() {
   ];
 
   const upcomingBills = [
-    { id: 1, title: 'Electricity Bill', provider: 'City Power', amount: '$89.50', dueDate: 'Due in 2 days', status: 'pending' },
-    { id: 2, title: 'Internet Bill', provider: 'FastNet', amount: '$45.00', dueDate: 'Due in 5 days', status: 'pending' },
-    { id: 3, title: 'Mobile Bill', provider: 'TelCorp', amount: '$32.99', dueDate: 'Due in 7 days', status: 'pending' },
+    { id: 1, title: 'Electricity Bill', provider: 'City Power', amount: 'cNGN 89.50', dueDate: 'Due in 2 days', status: 'pending' },
+    { id: 2, title: 'Internet Bill', provider: 'FastNet', amount: 'cNGN 45.00', dueDate: 'Due in 5 days', status: 'pending' },
+    { id: 3, title: 'Mobile Bill', provider: 'TelCorp', amount: 'cNGN 32.99', dueDate: 'Due in 7 days', status: 'pending' },
   ];
 
   return (
