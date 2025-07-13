@@ -7,12 +7,19 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+
+type RootStackParamList = {
+  CreateCards: undefined;
+  // Add others if needed
+};
 
 export default function CardsScreen() {
   const cardNumber = '1234567812345678'; // Example card number
   const maskedCardNumber = `${cardNumber.slice(0, 4)} **** **** ${cardNumber.slice(-4)}`;
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
 
     const handleCreateCard = () => {
     navigation.navigate('CreateCards');

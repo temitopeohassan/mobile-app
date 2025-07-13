@@ -4,10 +4,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, Eye, EyeOff } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext'; // 👈 import the auth context
 
-export default function HomeScreen({ route, navigation }) {
-  const phoneNumber = route?.params?.phoneNumber;
-  const token = route?.params?.token;
+export default function HomeScreen() {
+  const { auth } = useAuth(); // 👈 get token and phoneNumber from context
+  const phoneNumber = auth.phoneNumber;
+  const token = auth.token;
 
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [userInfo, setUserInfo] = useState(null);
@@ -17,7 +19,7 @@ export default function HomeScreen({ route, navigation }) {
   useEffect(() => {
     const fetchUserData = async () => {
       if (!phoneNumber || !token) {
-        console.warn('❌ Missing route params:', { phoneNumber, token });
+        console.warn('❌ Missing auth context:', { phoneNumber, token });
         setError('Missing authentication data. Please login again.');
         setLoading(false);
         return;
@@ -46,7 +48,7 @@ export default function HomeScreen({ route, navigation }) {
     };
 
     fetchUserData();
-  }, []);
+  }, [phoneNumber, token]);
 
   const formatBalance = (balance) => {
     const num = parseFloat(balance || '0');
