@@ -22,7 +22,7 @@ export default function SignInScreen() {
     const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/^0/, '')}`;
 
     try {
-      const res = await axios.post('https://afrobank-backend-api.vercel.app/api/auth/login', {
+      const res = await axios.post('https://afrobank-backend-api-temp.vercel.app/api/auth/login', {
         phoneNumber: fullPhoneNumber,
         pin,
       });
@@ -35,7 +35,7 @@ export default function SignInScreen() {
       Alert.alert('Login Successful', `Welcome ${user.phoneNumber}`);
 
       // ✅ Navigate to main app
-      navigation.replace('Home'); // no need to pass params anymore
+      navigation.replace('MainApp'); // no need to pass params anymore
     } catch (error: any) {
       console.error('Login failed:', error.message);
       Alert.alert(

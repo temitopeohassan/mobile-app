@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { BACK_END_API } from './constants/constants';
 
 export default function CompleteRegisterScreen() {
   const route = useRoute();
@@ -54,7 +55,7 @@ export default function CompleteRegisterScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch('https://afrobank-backend-api.vercel.app/api/auth/register', {
+      const response = await fetch('${BACK_END_API}/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
