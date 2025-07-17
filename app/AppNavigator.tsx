@@ -1,57 +1,93 @@
-import React from 'react';
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import React, { useLayoutEffect } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import { useAuth } from './context/AuthContext';
+
+// Auth Screens
+import SignInScreen from './sign-in';
+import ReturningUserSignInScreen from './ReturningUserSignInScreen';
+
+// Tab Screens
 import HomeScreen from './(tabs)/index';
 import CardsScreen from './(tabs)/cards';
 import BillsScreen from './(tabs)/bills';
 import SettingsScreen from './(tabs)/settings';
+
+// Drawer / Other Screens
 import WalletScreen from './(tabs)/wallet';
 import ReceiveScreen from './(tabs)/receive-screen';
 import SendScreen from './(tabs)/send-screen';
 import BasicInfoScreen from './(tabs)/basic-info';
-
 import ProfileScreen from './drawer/profile';
 import TransactionHistoryScreen from './drawer/transaction-history';
 import SupportScreen from './drawer/support';
 
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
+const RootStack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
-const Tab = createBottomTabNavigator();
+const Tabs = createBottomTabNavigator();
 const WalletStack = createNativeStackNavigator();
-const InfoStack = createNativeStackNavigator();
 
-// Bottom Tab Navigator
+type Props = {
+  navigation: any;
+};
+
+
+export default function RedirectGate({ navigation }: Props) {
+  const { auth } = useAuth();
+
+  useLayoutEffect(() => {
+    const isValidPhone = auth?.phoneNumber && auth.phoneNumber.startsWith('+');
+
+    if (isValidPhone) {
+      console.log('[RedirectGate] ✅ Valid phone number:', auth.phoneNumber);
+      navigation.replace('ReturningUserSignInScreen', { phoneNumber: auth.phoneNumber });
+    } else {
+      console.log('[RedirectGate] ❌ No phone number. Redirecting to SignIn...');
+      navigation.replace('SignIn');
+    }
+  }, [auth]);
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <ActivityIndicator size="large" />
+      <Text style={{ marginTop: 12 }}>Redirecting...</Text>
+    </View>
+  );
+}
+
+
 function TabNavigator() {
   return (
-    <Tab.Navigator
+    <Tabs.Navigator
       screenOptions={({ route }) => ({
+        headerShown: false,
         tabBarIcon: ({ color, size }) => {
-          let iconName: any;
-
-          if (route.name === 'Home') iconName = 'home';
-          else if (route.name === 'Cards') iconName = 'card';
-          else if (route.name === 'Bills') iconName = 'document-text';
-          else if (route.name === 'Settings') iconName = 'settings';
-
-          return <Ionicons name={iconName} size={size} color={color} />;
+          const icons: Record<string, any> = {
+            Home: 'home',
+            Cards: 'card',
+            Bills: 'document-text',
+            Settings: 'settings',
+          };
+          return <Ionicons name={icons[route.name]} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Cards" component={CardsScreen} />
-      <Tab.Screen name="Bills" component={BillsScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
-    </Tab.Navigator>
+      <Tabs.Screen name="Home" component={HomeScreen} />
+      <Tabs.Screen name="Cards" component={CardsScreen} />
+      <Tabs.Screen name="Bills" component={BillsScreen} />
+      <Tabs.Screen name="Settings" component={SettingsScreen} />
+    </Tabs.Navigator>
   );
 }
 
-// Wallet Stack Navigator
-function WalletStackNavigator() {
+function WalletNavigator() {
   return (
     <WalletStack.Navigator screenOptions={{ headerShown: false }}>
       <WalletStack.Screen name="WalletMain" component={WalletScreen} />
@@ -61,27 +97,26 @@ function WalletStackNavigator() {
   );
 }
 
-// ✅ Optional: If you want InfoUpdate to open like a full screen from Home
-function InfoStackNavigator() {
+function DrawerNavigator() {
   return (
-    <InfoStack.Navigator screenOptions={{ headerShown: false }}>
-      <InfoStack.Screen name="InfoUpdateScreen" component={BasicInfoScreen} />
-    </InfoStack.Navigator>
+    <Drawer.Navigator screenOptions={{ headerShown: false }}>
+      <Drawer.Screen name="Tabs" component={TabNavigator} />
+      <Drawer.Screen name="Wallet" component={WalletNavigator} />
+      <Drawer.Screen name="Profile" component={ProfileScreen} />
+      <Drawer.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
+      <Drawer.Screen name="Support" component={SupportScreen} />
+      <Drawer.Screen name="InfoUpdate" component={BasicInfoScreen} />
+    </Drawer.Navigator>
   );
 }
 
-// Drawer Navigator (Root)
 export default function AppNavigator() {
   return (
-    <Drawer.Navigator screenOptions={{ headerShown: false }}>
-      <Drawer.Screen name="Home" component={TabNavigator} />
-      <Drawer.Screen name="Wallet" component={WalletStackNavigator} />
-      <Drawer.Screen name="Profile" component={ProfileScreen} />
-      <Drawer.Screen name="Transaction History" component={TransactionHistoryScreen} />
-      <Drawer.Screen name="Support" component={SupportScreen} />
-
-      {/* ✅ Add this screen to allow redirect from Home */}
-      <Drawer.Screen name="InfoUpdate" component={BasicInfoScreen} />
-    </Drawer.Navigator>
+    <RootStack.Navigator screenOptions={{ headerShown: false }}>
+      <RootStack.Screen name="RedirectGate" component={RedirectGate} />
+      <RootStack.Screen name="SignIn" component={SignInScreen} />
+      <RootStack.Screen name="ReturningUserSignIn" component={ReturningUserSignInScreen} />
+      <RootStack.Screen name="App" component={DrawerNavigator} />
+    </RootStack.Navigator>
   );
 }

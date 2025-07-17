@@ -1,35 +1,53 @@
-// App.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-import { AuthProvider } from './app/context/AuthContext';
-
-import SplashScreen from './app/index';
-import SignInScreen from './app/sign-in';
-import ReturningUserSignInScreen from './app/ReturningUserSignInScreen';
-import SignUpScreen from './app/sign-up';
-import OtpScreen from './app/otp';
-import CompleteRegisterScreen from './app/complete-register';
-import CreateCardsScreen from './app/(tabs)/create-card';
+import { AuthProvider, useAuth } from './app/context/AuthContext';
 import AppNavigator from './app/AppNavigator';
+import { ActivityIndicator, View, Text } from 'react-native';
+import { navigationRef } from './app/navigationRef';
 
-const Stack = createNativeStackNavigator();
+function AppContent() {
+  const { restoreAuth, auth } = useAuth(); // Add auth here for logging
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const init = async () => {
+      console.log('[AppContent] Initializing...');
+      await restoreAuth();
+      console.log('[AppContent] Auth restored:', auth);
+
+      if (navigationRef.isReady()) {
+        console.log('[AppContent] Navigation is ready, navigating to ReturningUserSignIn');
+        navigationRef.navigate('ReturningUserSignIn');
+      } else {
+        console.warn('[AppContent] Navigation is not ready');
+      }
+
+      setReady(true);
+    };
+
+    init();
+  }, []);
+
+  if (!ready) {
+    console.log('[AppContent] App not ready, showing loading spinner...');
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+        <Text style={{ marginTop: 20 }}>Loading App...</Text>
+      </View>
+    );
+  }
+
+  console.log('[AppContent] App ready, rendering AppNavigator');
+  return <AppNavigator />;
+}
 
 export default function App() {
+  console.log('[App] Rendering NavigationContainer...');
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
-          <Stack.Screen name="Splash" component={SplashScreen} />
-          <Stack.Screen name="SignIn" component={SignInScreen} />
-          <Stack.Screen name="ReturningUserSignIn" component={ReturningUserSignInScreen} />
-          <Stack.Screen name="SignUp" component={SignUpScreen} />
-          <Stack.Screen name="Otp" component={OtpScreen} />
-          <Stack.Screen name="CompleteRegister" component={CompleteRegisterScreen} />
-          <Stack.Screen name="CreateCards" component={CreateCardsScreen} />
-          <Stack.Screen name="MainApp" component={AppNavigator} />
-        </Stack.Navigator>
+      <NavigationContainer ref={navigationRef} onReady={() => console.log('[App] NavigationContainer ready')}>
+        <AppContent />
       </NavigationContainer>
     </AuthProvider>
   );

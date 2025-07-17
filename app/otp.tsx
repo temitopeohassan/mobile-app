@@ -7,7 +7,6 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
-  Image,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { BACK_END_API } from './constants/constants';

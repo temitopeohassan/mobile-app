@@ -53,7 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (stored) {
         const parsed: AuthData = JSON.parse(stored);
 
-        // ✅ Validate token expiry without jwt-decode
         const decoded = parseJwt(parsed.token);
         const now = Date.now() / 1000;
 

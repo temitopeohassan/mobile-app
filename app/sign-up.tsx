@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
+import { BACK_END_API } from './constants/constants';
 
 export default function SignUpScreen() {
   const [countryCode, setCountryCode] = useState('+234');
@@ -38,7 +39,7 @@ export default function SignUpScreen() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      const response = await fetch('https://afrobank-backend-api-temp.vercel.app/api/auth/send-otp', {
+      const response = await fetch('${BACK_END_API}/api/auth/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

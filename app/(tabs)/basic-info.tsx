@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,143 +6,135 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { BACK_END_API } from '../constants/constants';
+import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
-export default function BasicInfoScreen({ navigation }) {
-  const [firstname, setFirstname] = useState('');
-  const [lastname, setLastname] = useState('');
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const tier = '1st';
+const BASE_URL = 'https://afrobank-api.vercel.app/api';
 
-  const getCurrentMonthYear = () => {
-    const now = new Date();
-    return now.toLocaleString('default', { month: 'long', year: 'numeric' }); // e.g., July 2025
+const BasicInfoScreen = () => {
+  const { auth } = useAuth();
+  const navigation = useNavigation();
+
+  const [fullName, setFullName] = useState('');
+  const [dob, setDob] = useState('');
+  const [bvn, setBvn] = useState('');
+
+  useEffect(() => {
+    if (auth.phoneNumber) {
+      console.log('Fetching info for:', auth.phoneNumber);
+      fetchUserInfo(auth.phoneNumber);
+    }
+  }, [auth.phoneNumber]);
+
+  const fetchUserInfo = async (phoneNumber: string) => {
+    try {
+      const response = await axios.get(`${BASE_URL}/user-info/${phoneNumber}`, {
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+        },
+      });
+
+      const data = response.data;
+      setFullName(data.fullName || '');
+      setDob(data.dob || '');
+      setBvn(data.bvn || '');
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+    }
   };
 
-  const memberSince = getCurrentMonthYear();
-
-  const handleSubmit = async () => {
-    if (!firstname || !lastname || !email) {
-      Alert.alert('All fields are required');
+  const submitProfileInfo = async () => {
+    if (!auth.phoneNumber) {
+      Alert.alert('Error', 'Phone number missing from context.');
       return;
     }
 
+    const profileData = {
+      fullName,
+      dob,
+      bvn,
+    };
+
     try {
-      setLoading(true);
-      const phoneNumber = await AsyncStorage.getItem('phoneNumber');
-      const token = await AsyncStorage.getItem('token');
-
-      await axios.post(
-        `${BACK_END_API}/api/user-info/${encodeURIComponent(phoneNumber)}`,
-        {
-          firstname,
-          lastname,
-          email,
-          tier,
-          joined: memberSince,
+      await axios.post(`${BASE_URL}/user-info/${auth.phoneNumber}`, profileData, {
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      });
 
-      Alert.alert('Profile saved successfully');
-      navigation.goBack(); // or navigate to Profile
-    } catch (err) {
-      console.error('Failed to submit profile info:', err);
-      Alert.alert('Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
+      Alert.alert('Success', 'Profile information updated!');
+      navigation.navigate('Home');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', 'Failed to update profile information.');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Basic Information</Text>
+      <Text style={styles.title}>Complete Your Profile</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="First Name"
-        value={firstname}
-        onChangeText={setFirstname}
+        placeholder="Full Name"
+        value={fullName}
+        onChangeText={setFullName}
       />
 
       <TextInput
         style={styles.input}
-        placeholder="Last Name"
-        value={lastname}
-        onChangeText={setLastname}
+        placeholder="Date of Birth (YYYY-MM-DD)"
+        value={dob}
+        onChangeText={setDob}
       />
 
       <TextInput
         style={styles.input}
-        placeholder="Email Address"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
+        placeholder="BVN"
+        value={bvn}
+        onChangeText={setBvn}
+        keyboardType="numeric"
       />
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#FFFFFF" />
-        ) : (
-          <Text style={styles.buttonText}>Submit</Text>
-        )}
+      <TouchableOpacity style={styles.button} onPress={submitProfileInfo}>
+        <Text style={styles.buttonText}>Submit</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
-}
+};
+
+export default BasicInfoScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    backgroundColor: '#F9FAFB',
+    padding: 20,
+    justifyContent: 'center',
+    backgroundColor: '#fff',
   },
   title: {
-    fontSize: 24,
-    fontFamily: 'Inter-Bold',
-    color: '#111827',
-    marginBottom: 24,
+    fontSize: 22,
+    marginBottom: 20,
+    fontWeight: 'bold',
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 16,
-    fontSize: 16,
-    borderColor: '#E5E7EB',
     borderWidth: 1,
-  },
-  hiddenFields: {
-    marginBottom: 24,
-  },
-  hiddenText: {
-    fontSize: 14,
-    color: '#6B7280',
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
   },
   button: {
-    backgroundColor: '#2563EB',
-    padding: 16,
+    backgroundColor: '#2e86de',
+    padding: 15,
     borderRadius: 10,
     alignItems: 'center',
   },
   buttonText: {
+    color: '#fff',
     fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
   },
 });
