@@ -67,7 +67,7 @@ export default function WalletScreen() {
 
         {/* Quick Actions */}
         <View style={styles.section}>
-          
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActions}>
             <TouchableOpacity style={styles.quickAction}>
               <View style={[styles.quickActionIcon, { backgroundColor: '#2563EB' }]}>

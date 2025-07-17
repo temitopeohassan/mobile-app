@@ -1,17 +1,28 @@
-import { View, Text, TextInput, Button, Alert, TouchableOpacity } from 'react-native';
-import { useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  Alert,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
-import { useAuth } from './context/AuthContext'; // 👈 import the context
+import { useAuth } from './context/AuthContext';
+import { BACK_END_API } from './constants/constants';
 
 export default function SignInScreen() {
   const navigation = useNavigation();
-  const { setAuth } = useAuth(); // 👈 use context to store token and phoneNumber
+  const { setAuth } = useAuth();
 
   const [countryCode, setCountryCode] = useState('+234');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [pin, setPin] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (phoneNumber.length < 7 || pin.length !== 4) {
@@ -22,43 +33,47 @@ export default function SignInScreen() {
     const fullPhoneNumber = `${countryCode}${phoneNumber.replace(/^0/, '')}`;
 
     try {
-      const res = await axios.post('https://afrobank-backend-api-temp.vercel.app/api/auth/login', {
+      setLoading(true);
+      const res = await axios.post(`${BACK_END_API}/api/auth/login`, {
         phoneNumber: fullPhoneNumber,
         pin,
       });
 
       const { token, user } = res.data;
 
-      // ✅ Set auth data globally
-      setAuth({ phoneNumber: user.phoneNumber, token });
+      // ✅ Store in AsyncStorage
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('phoneNumber', user.phoneNumber);
+
+      // ✅ Optional combined object (if needed later)
+      await AsyncStorage.setItem('authData', JSON.stringify({ token, phoneNumber: user.phoneNumber }));
+
+      // ✅ Set auth context
+      setAuth({ token, phoneNumber: user.phoneNumber });
 
       Alert.alert('Login Successful', `Welcome ${user.phoneNumber}`);
-
-      // ✅ Navigate to main app
-      navigation.replace('MainApp'); // no need to pass params anymore
-    } catch (error: any) {
+      navigation.navigate('Home');
+    } catch (error) {
       console.error('Login failed:', error.message);
       Alert.alert(
         'Login Failed',
         error?.response?.data?.error || 'An error occurred. Please try again.'
       );
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSignUp = () => {
-    navigation.navigate('SignUp');
-  };
-
   return (
-    <View style={{ padding: 24, flex: 1, justifyContent: 'center' }}>
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 24 }}>Sign In</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Sign In</Text>
 
-      <View style={{ flexDirection: 'row', marginBottom: 12 }}>
-        <View style={{ flex: 1.2, borderWidth: 1, borderColor: '#ccc', borderRadius: 8 }}>
+      <View style={styles.row}>
+        <View style={styles.pickerContainer}>
           <Picker
             selectedValue={countryCode}
-            onValueChange={(value) => setCountryCode(value)}
-            style={{ height: 50 }}
+            onValueChange={setCountryCode}
+            style={styles.picker}
           >
             <Picker.Item label="+1 (US)" value="+1" />
             <Picker.Item label="+44 (UK)" value="+44" />
@@ -72,14 +87,7 @@ export default function SignInScreen() {
           placeholder="Phone Number"
           keyboardType="phone-pad"
           maxLength={11}
-          style={{
-            flex: 2.8,
-            marginLeft: 8,
-            borderWidth: 1,
-            borderColor: '#ccc',
-            borderRadius: 8,
-            padding: 12,
-          }}
+          style={styles.phoneInput}
           value={phoneNumber}
           onChangeText={setPhoneNumber}
         />
@@ -90,24 +98,68 @@ export default function SignInScreen() {
         secureTextEntry
         keyboardType="numeric"
         maxLength={4}
-        style={{
-          marginBottom: 16,
-          borderWidth: 1,
-          borderColor: '#ccc',
-          borderRadius: 8,
-          padding: 12,
-        }}
+        style={styles.input}
         value={pin}
         onChangeText={setPin}
       />
 
-      <Button title="Login" onPress={handleLogin} />
+      <Button title={loading ? 'Logging in...' : 'Login'} onPress={handleLogin} disabled={loading} />
 
-      <TouchableOpacity onPress={handleSignUp} style={{ marginTop: 16 }}>
-        <Text style={{ color: '#007AFF', textAlign: 'center' }}>
-          Don't have an account? Sign up
-        </Text>
+      <TouchableOpacity onPress={() => navigation.navigate('SignUp')} style={styles.signupLink}>
+        <Text style={styles.signupText}>Don't have an account? Sign up</Text>
       </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 24,
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  pickerContainer: {
+    flex: 1.2,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+  },
+  phoneInput: {
+    flex: 2.8,
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  signupLink: {
+    marginTop: 16,
+  },
+  signupText: {
+    color: '#007AFF',
+    textAlign: 'center',
+  },
+});

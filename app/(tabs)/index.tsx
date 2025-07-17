@@ -1,21 +1,16 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, Eye, EyeOff } from 'lucide-react-native';
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+
 import { useAuth } from '../context/AuthContext';
 import { BACK_END_API } from '../constants/constants';
-import { 
-  CreditCard, 
-  Plus, 
-  Send, 
-  Download, 
-  MoreHorizontal,
-  Smartphone,
-  Banknote,
-  Building2
+
+import {
+  Bell, Eye, EyeOff,
+  Send, Download, Plus
 } from 'lucide-react-native';
 
 export default function HomeScreen() {
@@ -28,7 +23,7 @@ export default function HomeScreen() {
   const [error, setError] = useState(null);
 
   const fetchUserData = useCallback(async () => {
-    if (!auth.phoneNumber || !auth.token) {
+    if (!auth?.phoneNumber || !auth?.token) {
       setError('Missing authentication data. Please login again.');
       setLoading(false);
       return;
@@ -46,32 +41,36 @@ export default function HomeScreen() {
     } catch (err) {
       const message = err.response?.data?.error || 'Failed to fetch user data.';
       setError(message);
+
       Alert.alert('Error', message, [
         { text: 'OK' },
         { text: 'Retry', onPress: fetchUserData },
       ]);
+
+      // Optional: Handle token expiration
+      // if (err.response?.status === 401) {
+      //   logout(); // you can call setAuth(null) if you implement logout logic
+      // }
     } finally {
       setLoading(false);
     }
-  }, [auth.phoneNumber, auth.token]);
+  }, [auth?.phoneNumber, auth?.token]);
 
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
 
   useEffect(() => {
-  if (!loading && userInfo && !userInfo.firstName) {
-    navigation.navigate('InfoUpdate');
-  }
-}, [userInfo, loading, navigation]);
-
+    if (!loading && userInfo && !userInfo.firstName) {
+      navigation.navigate('InfoUpdate');
+    }
+  }, [userInfo, loading, navigation]);
 
   const formatBalance = (balance) => {
     const num = parseFloat(balance || '0');
     return isNaN(num) ? '0.00' : num.toLocaleString('en-US', { minimumFractionDigits: 2 });
   };
 
-  const formatPhoneNumber = (phone) => phone?.replace(/^\+234/, '0') || '...';
   const formatWalletAddress = (addr) =>
     addr?.length > 10 ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : addr;
 
@@ -112,10 +111,9 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Welcome back</Text>
-<Text style={styles.username}>{userInfo.firstName || '...'}</Text>
-
+            <Text style={styles.username}>{userInfo.firstName || '...'}</Text>
             <Text style={styles.walletAddress}>{formatWalletAddress(userInfo.walletAddress)}</Text>
-            <Text style={styles.blockchain}>{userInfo.blockchain.toUpperCase()} Network</Text>
+            <Text style={styles.blockchain}>{userInfo.blockchain?.toUpperCase()} Network</Text>
           </View>
           <TouchableOpacity style={styles.notificationButton}>
             <Bell size={24} color="#374151" />
@@ -125,41 +123,41 @@ export default function HomeScreen() {
         {/* Balance Card */}
         <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.balanceCard}>
           <View style={styles.balanceHeader}>
-            <Text style={styles.balanceLabel}>
-              {userInfo?.CNGNSymbol || 'cNGN'} Balance
-            </Text>
+            <Text style={styles.balanceLabel}>{userInfo.CNGNSymbol || 'cNGN'} Balance</Text>
             <TouchableOpacity onPress={() => setBalanceVisible(!balanceVisible)}>
               {balanceVisible ? <Eye size={20} color="#FFF" /> : <EyeOff size={20} color="#FFF" />}
             </TouchableOpacity>
           </View>
           <Text style={styles.balanceAmount}>
             {balanceVisible
-              ? `${formatBalance(userInfo.CNGNBalance)} ${userInfo?.CNGNSymbol || 'cNGN'}`
+              ? `${formatBalance(userInfo.CNGNBalance)} ${userInfo.CNGNSymbol || 'cNGN'}`
               : '••••••••'}
           </Text>
         </LinearGradient>
 
-        {/* Action Buttons */}
-                  <View style={styles.quickActions}>
-            <TouchableOpacity style={styles.quickAction}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#2563EB' }]}>
-                <Send size={24} color="#FFFFFF" />
-              </View>
-              <Text style={styles.quickActionText}>Send</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickAction}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#059669' }]}>
-                <Download size={24} color="#FFFFFF" />
-              </View>
-              <Text style={styles.quickActionText}>Receive</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickAction}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#DC2626' }]}>
-                <Plus size={24} color="#FFFFFF" />
-              </View>
-              <Text style={styles.quickActionText}>Top Up</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity style={styles.quickAction}>
+            <View style={[styles.quickActionIcon, { backgroundColor: '#2563EB' }]}>
+              <Send size={24} color="#FFF" />
+            </View>
+            <Text style={styles.quickActionText}>Send</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.quickAction}>
+            <View style={[styles.quickActionIcon, { backgroundColor: '#059669' }]}>
+              <Download size={24} color="#FFF" />
+            </View>
+            <Text style={styles.quickActionText}>Receive</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.quickAction}>
+            <View style={[styles.quickActionIcon, { backgroundColor: '#DC2626' }]}>
+              <Plus size={24} color="#FFF" />
+            </View>
+            <Text style={styles.quickActionText}>Top Up</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Wallet Button */}
         <TouchableOpacity style={styles.walletButton} onPress={() => navigation.navigate('Wallet')}>

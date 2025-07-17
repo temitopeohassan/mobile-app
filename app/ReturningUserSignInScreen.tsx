@@ -10,7 +10,9 @@ export default function ReturningUserSignInScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { setAuth } = useAuth();
+
   const { phoneNumber } = route.params as { phoneNumber: string };
+  console.log('[ReturningUserSignInScreen] Mounted with phoneNumber:', phoneNumber);
 
   const [pin, setPin] = useState(['', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
@@ -18,7 +20,10 @@ export default function ReturningUserSignInScreen() {
   const inputRefs = useRef<TextInput[]>([]);
 
   const handleLogin = async (pinArray: string[]) => {
-    if (isLoading || hasLoggedIn) return;
+    if (isLoading || hasLoggedIn) {
+      console.log('[handleLogin] Skipping login - already loading or logged in');
+      return;
+    }
 
     const pinString = pinArray.join('');
     if (pinString.length !== 4) {
@@ -27,27 +32,31 @@ export default function ReturningUserSignInScreen() {
     }
 
     setIsLoading(true);
+    console.log('[handleLogin] Attempting login with PIN:', pinString);
 
     try {
-      const res = await axios.post('${BACK_END_API}/api/auth/login', {
+      const res = await axios.post(`${BACK_END_API}/api/auth/login`, {
         phoneNumber,
         pin: pinString,
       });
 
       const { token } = res.data;
+      console.log('[handleLogin] Login successful, token:', token);
 
       await AsyncStorage.setItem('authData', JSON.stringify({ token, phoneNumber }));
       await AsyncStorage.setItem('lastPhoneNumber', phoneNumber);
       setAuth({ phoneNumber, token });
 
-      setHasLoggedIn(true); // Prevent multiple logins
+      setHasLoggedIn(true);
       Alert.alert('Login Successful', 'Welcome back!');
+
+      console.log('[handleLogin] Navigating to Home screen');
       navigation.reset({
-  index: 0,
-  routes: [{ name: 'Home' }],
-});
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
     } catch (error: any) {
-      console.error('Returning login failed:', error.message);
+      console.error('[handleLogin] Login failed:', error.message);
       Alert.alert(
         'Login Failed',
         error?.response?.data?.error || 'An error occurred. Please try again.'
@@ -61,6 +70,7 @@ export default function ReturningUserSignInScreen() {
 
   // Auto-submit when PIN is complete
   useEffect(() => {
+    console.log('[useEffect] Checking PIN completion:', pin.join(''));
     if (pin.join('').length === 4 && !isLoading && !hasLoggedIn) {
       handleLogin(pin);
     }
@@ -87,12 +97,21 @@ export default function ReturningUserSignInScreen() {
   return (
     <View style={{ padding: 24, flex: 1, justifyContent: 'center' }}>
       <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 24 }}>Welcome Back</Text>
-      <Text style={{ fontSize: 16, marginBottom: 12 }}>Phone Number: {phoneNumber}</Text>
+      <Text style={{ fontSize: 16, marginBottom: 12 }}>
+        Phone Number: {phoneNumber || 'Not provided'}
+      </Text>
       <Text style={{ fontSize: 16, marginBottom: 16, textAlign: 'center' }}>
         {isLoading ? 'Logging in...' : 'Enter your 4-digit PIN'}
       </Text>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24, paddingHorizontal: 20 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginBottom: 24,
+          paddingHorizontal: 20,
+        }}
+      >
         {pin.map((digit, index) => (
           <TextInput
             key={index}
