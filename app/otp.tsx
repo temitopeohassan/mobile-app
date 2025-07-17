@@ -7,8 +7,10 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { BACK_END_API } from './constants/constants';
 
 export default function OtpScreen() {
   const route = useRoute();
@@ -29,7 +31,7 @@ export default function OtpScreen() {
 
     try {
       const response = await fetch(
-        'https://afrobank-backend-api.vercel.app/api/auth/verify-otp',
+        '${BACK_END_API}/api/auth/verify-otp',
         {
           method: 'POST',
           headers: {

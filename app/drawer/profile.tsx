@@ -1,11 +1,23 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { 
-  Edit, 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import {
+  Edit,
+  User,
+  Mail,
+  Phone,
+  ListPlus,
   Calendar,
   Shield,
   Bell,
@@ -13,25 +25,64 @@ import {
   Gift,
   HelpCircle,
   LogOut,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react-native';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProfileScreen() {
+  const { logout } = useAuth();
+  const navigation = useNavigation();
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const profileOptions = [
     { id: 1, title: 'Personal Information', icon: User, color: '#2563EB' },
     { id: 2, title: 'Security & Privacy', icon: Shield, color: '#059669' },
     { id: 3, title: 'Notifications', icon: Bell, color: '#F59E0B' },
     { id: 4, title: 'Payment Methods', icon: CreditCard, color: '#7C3AED' },
-    { id: 5, title: 'Rewards & Cashback', icon: Gift, color: '#DC2626' },
-    { id: 6, title: 'Help & Support', icon: HelpCircle, color: '#0D9488' },
+    { id: 5, title: 'Help & Support', icon: HelpCircle, color: '#0D9488' },
   ];
 
-  const personalInfo = [
-    { label: 'Email', value: 'ahmed.chukwu@email.com', icon: Mail },
-    { label: 'Phone', value: '+234 123-4567', icon: Phone },
-    { label: 'Address', value: '123 Lagos St, Lagos State', icon: MapPin },
-    { label: 'Member Since', value: 'January 2025', icon: Calendar },
-  ];
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const phoneNumber = await AsyncStorage.getItem('phoneNumber');
+        const token = await AsyncStorage.getItem('token');
+        const response = await axios.get(
+          `https://yourapi.com/user-info/${encodeURIComponent(phoneNumber)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setUserData(response.data);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'SignIn' }],
+    });
+  };
+
+  const personalInfo = userData
+    ? [
+        { label: 'Email', value: userData.email, icon: Mail },
+        { label: 'Phone', value: userData.phoneNumber, icon: Phone },
+        { label: 'Tier', value: userData.tier || 'N/A', icon: ListPlus },
+        { label: 'Member Since', value: userData.joined || 'N/A', icon: Calendar },
+      ]
+    : [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,36 +97,30 @@ export default function ProfileScreen() {
 
         {/* Profile Card */}
         <View style={styles.profileCard}>
-          <View style={styles.profileImageContainer}>
-            <Image
-              source={{ uri: 'https://pbs.twimg.com/profile_images/1889267068836401152/VFyJWU_o_400x400.jpg' }}
-              style={styles.profileImage}
-            />
-            <TouchableOpacity style={styles.editImageButton}>
-              <Edit size={16} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.profileName}>Ahmed Chukwu</Text>
-          <Text style={styles.profileEmail}>ahmed.chukwu@email.com</Text>
-          <View style={styles.profileStats}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>cNGN12,547</Text>
-              <Text style={styles.statLabel}>Balance</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>156</Text>
-              <Text style={styles.statLabel}>Transactions</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>3rd</Text>
-              <Text style={styles.statLabel}>Tier</Text>
-            </View>
-          </View>
+          {loading ? (
+            <ActivityIndicator size="large" color="#2563EB" />
+          ) : (
+            <>
+              <View style={styles.profileImageContainer}>
+                <Image
+                  source={{
+                    uri: `../images/${userData?.image || 'profile.jpg'}`,
+                  }}
+                  style={styles.profileImage}
+                />
+                <TouchableOpacity style={styles.editImageButton}>
+                  <Edit size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.profileName}>
+                {userData?.firstname} {userData?.lastname}
+              </Text>
+              <Text style={styles.profileEmail}>{userData?.email}</Text>
+            </>
+          )}
         </View>
 
-        {/* Personal Information */}
+        {/* Personal Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
           <View style={styles.infoList}>
@@ -102,7 +147,12 @@ export default function ProfileScreen() {
             {profileOptions.map((option) => (
               <TouchableOpacity key={option.id} style={styles.optionItem}>
                 <View style={styles.optionLeft}>
-                  <View style={[styles.optionIcon, { backgroundColor: `${option.color}20` }]}>
+                  <View
+                    style={[
+                      styles.optionIcon,
+                      { backgroundColor: `${option.color}20` },
+                    ]}
+                  >
                     <option.icon size={20} color={option.color} />
                   </View>
                   <Text style={styles.optionTitle}>{option.title}</Text>
@@ -115,7 +165,7 @@ export default function ProfileScreen() {
 
         {/* Logout */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.logoutButton}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <LogOut size={20} color="#DC2626" />
             <Text style={styles.logoutText}>Sign Out</Text>
           </TouchableOpacity>
@@ -126,10 +176,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -138,11 +185,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 24,
   },
-  title: {
-    fontSize: 28,
-    fontFamily: 'Inter-Bold',
-    color: '#111827',
-  },
+  title: { fontSize: 28, fontFamily: 'Inter-Bold', color: '#111827' },
   editButton: {
     width: 40,
     height: 40,
@@ -203,33 +246,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 24,
   },
-  profileStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statItem: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  statValue: {
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#6B7280',
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#E5E7EB',
-  },
-  section: {
-    marginBottom: 32,
-  },
+  section: { marginBottom: 32 },
   sectionTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
@@ -237,28 +254,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginBottom: 16,
   },
-  infoList: {
-    paddingHorizontal: 24,
-  },
+  infoList: { paddingHorizontal: 24 },
   infoItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
     elevation: 1,
   },
-  infoLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
+  infoLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   infoIcon: {
     width: 32,
     height: 32,
@@ -268,9 +274,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  infoDetails: {
-    flex: 1,
-  },
+  infoDetails: { flex: 1 },
   infoLabel: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
@@ -282,9 +286,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#111827',
   },
-  optionsList: {
-    paddingHorizontal: 24,
-  },
+  optionsList: { paddingHorizontal: 24 },
   optionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -293,17 +295,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
     elevation: 1,
   },
-  optionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
+  optionLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   optionIcon: {
     width: 40,
     height: 40,

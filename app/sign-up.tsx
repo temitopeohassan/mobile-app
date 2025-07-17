@@ -38,7 +38,7 @@ export default function SignUpScreen() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      const response = await fetch('https://afrobank-backend-api.vercel.app/api/auth/send-otp', {
+      const response = await fetch('https://afrobank-backend-api-temp.vercel.app/api/auth/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
