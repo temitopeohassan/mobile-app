@@ -1,11 +1,9 @@
-# Sample Snack app
+# Afro Bank Mobile App
 
-Open the `App.js` file to start writing some code. You can preview the changes directly on your phone or tablet by scanning the **QR code** or use the iOS or Android emulators. When you're done, click **Save** and share the link!
+This is the repo for Afro Bank Mobile App
 
-When you're ready to see everything that Expo provides (or if you want to use your own editor) you can **Download** your project and use it with [expo cli](https://docs.expo.dev/get-started/installation/#expo-cli)).
+Afro Bank is a next-generation, onchain neo bank that empowers individuals and businesses to SEND, RECEIVE, SAVE, BORROW and SPEND USDc, cNGN and other stablecoins with ease and trust, on Base.
 
-All projects created in Snack are publicly available, so you can easily share the link to this project via link, or embed it on a web page with the `<>` button.
+Afro Bank provides an intuitive, phone-number-based smart wallet that bridges Web2 simplicity with the power of Web3. Whether you're paying for daily utilities, making transfers, or planning business transactions, Afro Bank ensures seamless, fast, secure, cheap, and transparent onchain transactions.
 
-If you're having problems, you can tweet to us [@expo](https://twitter.com/expo) or ask in our [forums](https://forums.expo.dev/c/expo-dev-tools/61) or [Discord](https://chat.expo.dev/).
-
-Snack is Open Source. You can find the code on the [GitHub repo](https://github.com/expo/snack).
+This mobile app is being developed using React Native Expo

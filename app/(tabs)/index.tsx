@@ -60,11 +60,7 @@ export default function HomeScreen() {
     fetchUserData();
   }, [fetchUserData]);
 
-  useEffect(() => {
-    if (!loading && userInfo && !userInfo.firstName) {
-      navigation.navigate('InfoUpdate');
-    }
-  }, [userInfo, loading, navigation]);
+
 
   const formatBalance = (balance) => {
     const num = parseFloat(balance || '0');

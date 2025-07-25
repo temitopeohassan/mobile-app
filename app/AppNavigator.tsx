@@ -1,15 +1,21 @@
-import React, { useLayoutEffect } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
+import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import {
+  View,
+  Text,
+  TextInput,
+  Alert,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-import { useAuth } from './context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 // Auth Screens
 import SignInScreen from './sign-in';
+import PhoneNumberScreen from './phone-number';
+import PinInputScreen from './pin-input';
 import ReturningUserSignInScreen from './ReturningUserSignInScreen';
 
 // Tab Screens
@@ -32,53 +38,30 @@ const Drawer = createDrawerNavigator();
 const Tabs = createBottomTabNavigator();
 const WalletStack = createNativeStackNavigator();
 
-type Props = {
-  navigation: any;
-};
-
-
-export default function RedirectGate({ navigation }: Props) {
-  const { auth } = useAuth();
-
-  useLayoutEffect(() => {
-    const isValidPhone = auth?.phoneNumber && auth.phoneNumber.startsWith('+');
-
-    if (isValidPhone) {
-      console.log('[RedirectGate] ✅ Valid phone number:', auth.phoneNumber);
-      navigation.replace('ReturningUserSignInScreen', { phoneNumber: auth.phoneNumber });
-    } else {
-      console.log('[RedirectGate] ❌ No phone number. Redirecting to SignIn...');
-      navigation.replace('SignIn');
-    }
-  }, [auth]);
-
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <ActivityIndicator size="large" />
-      <Text style={{ marginTop: 12 }}>Redirecting...</Text>
-    </View>
-  );
-}
-
-
 function TabNavigator() {
   return (
     <Tabs.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => {
-          const icons: Record<string, any> = {
-            Home: 'home',
-            Cards: 'card',
-            Bills: 'document-text',
-            Settings: 'settings',
-          };
-          return <Ionicons name={icons[route.name]} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
-      })}
-    >
+  screenOptions={({ route }) => ({
+    headerShown: true, // ✅ enable top bar
+    headerLeft: () => (
+      <TouchableOpacity onPress={() => navigation.openDrawer()} style={{ marginLeft: 16 }}>
+        <Ionicons name="menu" size={28} color="black" />
+      </TouchableOpacity>
+    ),
+    tabBarIcon: ({ color, size }) => {
+      const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
+        Home: 'home',
+        Cards: 'card',
+        Bills: 'document-text',
+        Settings: 'settings',
+      };
+      return <Ionicons name={icons[route.name]} size={size} color={color} />;
+    },
+    tabBarActiveTintColor: '#007AFF',
+    tabBarInactiveTintColor: 'gray',
+  })}
+>
+
       <Tabs.Screen name="Home" component={HomeScreen} />
       <Tabs.Screen name="Cards" component={CardsScreen} />
       <Tabs.Screen name="Bills" component={BillsScreen} />
@@ -113,8 +96,9 @@ function DrawerNavigator() {
 export default function AppNavigator() {
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
-      <RootStack.Screen name="RedirectGate" component={RedirectGate} />
+      <RootStack.Screen name="PhoneNumber" component={PhoneNumberScreen} />
       <RootStack.Screen name="SignIn" component={SignInScreen} />
+      <RootStack.Screen name="PinInput" component={PinInputScreen} />
       <RootStack.Screen name="ReturningUserSignIn" component={ReturningUserSignInScreen} />
       <RootStack.Screen name="App" component={DrawerNavigator} />
     </RootStack.Navigator>
